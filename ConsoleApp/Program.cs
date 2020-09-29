@@ -1,12 +1,36 @@
-﻿using System;
+﻿using Akka.Actor;
+using Akka.DI.AutoFac;
+using Autofac;
+using Akka.DI.Core;
+using ConsoleApp.Messages;
+using System;
 
 namespace ConsoleApp
 {
-    class Program
+    internal class Program
     {
-        static void Main(string[] args)
+        private static IContainer CompositeRoot()
         {
-            Console.WriteLine("Hello World!");
+            var builder = new ContainerBuilder();
+            builder.RegisterType<RootActor>();
+            builder.RegisterType<PongParentActor>();
+            builder.RegisterType<PingParentActor>();
+            builder.RegisterType<PongChildActor>();
+            return builder.Build();
+        }
+
+        private static void Main(string[] args)
+        {
+            using (var system = ActorSystem.Create("Sample"))
+            {
+                var resolver = new AutoFacDependencyResolver(CompositeRoot(), system);
+
+                var rootActor = system.ActorOf(system.DI().Props<RootActor>(), "RootActor");
+
+                rootActor.Tell(new Start { });
+
+                Console.ReadLine();
+            }
         }
     }
 }
